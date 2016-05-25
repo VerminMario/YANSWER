@@ -1,0 +1,62 @@
+#!/bin/bash
+
+if [ "$1" == "--help" ] || [ "$1" == "-h" ]; then
+	echo "Usage: yanswer \"<your question>\""
+else
+rawurlencode() {
+  local string="${1}"
+  local strlen=${#string}
+  local encoded=""
+  local pos c o
+
+  for (( pos=0 ; pos<strlen ; pos++ )); do
+     c=${string:$pos:1}
+     case "$c" in
+        [-_.~a-zA-Z0-9] ) o="${c}" ;;
+        * )               printf -v o '%%%02x' "'$c"
+     esac
+     encoded+="${o}"
+  done
+  echo "${encoded}"    # You can either set a return variable (FASTER) 
+  REPLY="${encoded}"   #+or echo the result (EASIER)... or both... :p
+}
+
+busqueda=$(rawurlencode "$1")
+
+curl -silent "https://es.answers.yahoo.com/search/search_result?fr=uh3_answers_vert_gs&type=2button&p=$busqueda" > temporal
+
+question=$(cat temporal | grep -m 1 "qid" | awk -F'"' '{print $6}')
+
+question="https://es.answers.yahoo.com$question"
+
+curl -silent $question > temporal
+
+titulo=$(cat temporal | grep "meta name=\"title\"" | awk -F'"' '{print $4}')
+
+description=$(cat temporal | grep "meta name=\"description\"" | awk -F'"' '{print $4}')
+
+echo $titulo | sed 's/\&quot;/\"/g'
+if [ "$description" != "" ]; then
+	echo "($description)" | sed 's/\&quot;/\"/g'
+fi
+IFS=$'\n'
+
+best=0
+answer=""
+
+for line in $(cat temporal); do
+	if [ "$(echo $line | grep '<span class=\"ya-ba-title Fw-b\">Mejor respuesta:</span>')" != "" ]; then
+		best=1
+	elif [ "$(echo $line | grep '/span')" != "" ] && [ $best == 1 ]; then
+		answer="$answer $line"
+		break
+	elif [ $best == 1 ]; then
+		answer="$answer $line"
+	fi
+done
+
+echo $answer | tr -d "\r" | sed -e 's/<[^>]*>//g' | sed 's/\&quot;/\"/g'
+
+rm temporal
+
+fi
