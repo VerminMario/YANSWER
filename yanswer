@@ -35,7 +35,7 @@ titulo=$(cat temporal | grep "meta name=\"title\"" | awk -F'"' '{print $4}')
 
 description=$(cat temporal | grep "meta name=\"description\"" | awk -F'"' '{print $4}')
 
-echo $titulo | sed 's/\&quot;/\"/g'
+echo "$titulo" | sed 's/\&quot;/\"/g'
 if [ "$description" != "" ]; then
 	echo "($description)" | sed 's/\&quot;/\"/g'
 fi
@@ -55,7 +55,7 @@ for line in $(cat temporal); do
 	fi
 done
 
-echo $answer | tr -d "\r" | sed -e 's/<[^>]*>//g' | sed 's/\&quot;/\"/g'
+echo "$answer" | tr -d "\r" | sed -e 's/<[^>]*>//g' | sed 's/\&quot;/\"/g'
 
 rm temporal
 
